@@ -1,0 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  
+  --color-gold: #EAB308; /* Yellow 500 */
+  --color-gold-light: #FDE047; /* Yellow 300 */
+  --color-gold-dark: #CA8A04; /* Yellow 600 */
+  --color-dark-primary: #020617; /* Deep Slate 950 */
+  --color-dark-secondary: #0F172A; /* Slate 900 */
+  --color-dark-card: #1E293B; /* Slate 800 */
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    background-color: #020617;
+    color: #F8FAFC;
+    overflow-x: hidden;
+  }
+}
+
+/* Glassmorphism custom components */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-dark {
+  background: rgba(2, 6, 23, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(234, 179, 8, 0.15);
+}
+
+/* Animations classes */
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(234, 179, 8, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(234, 179, 8, 0.45);
+  }
+}
+
+.glow-button {
+  animation: pulseGlow 3s infinite;
+}
+
+/* Hide scrollbars but keep functionality */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

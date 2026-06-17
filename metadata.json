@@ -1,0 +1,6 @@
+{
+  "name": "JR Crédito e Soluções Financeiras",
+  "description": "Plataforma premium completa de correspondente bancário para simulação de Bolsa Família (Bolsa+) e empréstimo consignado INSS.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

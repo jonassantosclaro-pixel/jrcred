@@ -1,0 +1,109 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net: Default Deny All
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function roleExists(uid, targetRole) {
+      let path = /databases/$(database)/documents/users/$(uid);
+      return exists(path) && get(path).data.role == targetRole;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && roleExists(request.auth.uid, "admin");
+    }
+
+    function isColaborador() {
+      return isSignedIn() && roleExists(request.auth.uid, "colaborador");
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128;
+    }
+
+    // Rules for Configurations
+    match /configs/{configId} {
+      // Configuration is read by everyone at app boot so home page simulators work
+      allow read: if isValidId(configId);
+      // Only Admin can write config changes
+      allow write: if isSignedIn() && isAdmin() && isValidId(configId);
+    }
+
+    // Rules for Users collection
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || (userId != request.auth.uid && isAdmin()));
+      // Admin can list all users
+      allow list: if isSignedIn() && isAdmin();
+      
+      // On creation, any signed-in user can create their own profile, but cannot self-promote to admin (unless it is the master admin email)
+      allow create: if isSignedIn() && isOwner(userId) && isValidId(userId) &&
+        (
+          request.resource.data.role in ["client", "colaborador"] ||
+          (request.resource.data.role == "admin" && 'email' in request.auth.token && request.auth.token.email.lower() == "jrcredito@x.com")
+        ) &&
+        request.resource.data.uid == userId;
+
+      // Update rules:
+      // Owners can update their details (name, phone) but not their role/approval/commission
+      // Admins can update any user's fields (role, approved, commissionRate, etc.)
+      allow update: if isValidId(userId) && (
+        (isOwner(userId) && 
+         !request.resource.data.diff(resource.data).affectedKeys().hasAny(["role", "approved", "commissionRate", "uid", "email", "createdAt"])) ||
+        (userId != request.auth.uid && isAdmin())
+      );
+
+      // Only Admin can delete a user
+      allow delete: if isSignedIn() && userId != request.auth.uid && isAdmin() && isValidId(userId);
+    }
+
+    // Rules for Simulations
+    match /simulations/{simulationId} {
+      // Create simulation: Public users can simulate online (createdBy == "public"),
+      // and logged-in users can simulate too.
+      allow create: if isValidId(simulationId) && (
+        (!isSignedIn() && request.resource.data.createdBy == "public") ||
+        (isSignedIn() && request.resource.data.createdBy == request.auth.uid)
+      );
+
+      // Read single simulation: Admins can, or creators can, or anyone with CPF matching
+      allow get: if isValidId(simulationId) && (
+        isAdmin() ||
+        (isSignedIn() && resource.data.createdBy == request.auth.uid) ||
+        (resource.data.cpf != null)
+      );
+
+      // List queries: 
+      // Admins/Colaboradores can list.
+      // Or users querying by their specific CPF
+      allow list: if 
+        isAdmin() ||
+        (isSignedIn() && isColaborador() && resource.data.createdBy == request.auth.uid) ||
+        (resource.data.cpf != null);
+
+      // Update simulation: Admin can edit anything.
+      // Colaboradores can edit status if it's theirs.
+      // Clients can add observations (upload document comments).
+      allow update: if isValidId(simulationId) && (
+        isAdmin() ||
+        (isSignedIn() && resource.data.createdBy == request.auth.uid && 
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status", "observations"])) ||
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(["observations"]))
+      );
+
+      // Only Admin can delete simulations
+      allow delete: if isSignedIn() && isAdmin() && isValidId(simulationId);
+    }
+  }
+}

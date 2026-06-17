@@ -1,0 +1,74 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net: Default Deny All
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUserData(uid) {
+      return get(/databases/$(database)/documents/users/$(uid)).data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && getUserData(request.auth.uid).role == "admin";
+    }
+
+    function isColaborador() {
+      return isSignedIn() && getUserData(request.auth.uid).role == "colaborador";
+    }
+
+    // Rules for Configurations
+    match /configs/{configId} {
+      allow read: if true;
+      allow write: if isSignedIn() && isAdmin();
+    }
+
+    // Rules for Users collection
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isSignedIn() && isAdmin();
+      
+      allow create: if isSignedIn() && request.auth.uid == userId &&
+        request.resource.data.role in ["client", "colaborador"] &&
+        request.resource.data.uid == userId;
+
+      allow update: if request.auth.uid == userId && (
+        isAdmin() ||
+        (request.auth.uid == userId && 
+         !request.resource.data.diff(resource.data).affectedKeys().hasAny(["role", "approved", "commissionRate", "uid", "email", "createdAt"]))
+      );
+
+      allow delete: if isSignedIn() && isAdmin();
+    }
+
+    // Rules for Simulations
+    match /simulations/{simulationId} {
+      allow create: if true;
+
+      allow get: if 
+        isAdmin() ||
+        (isSignedIn() && resource.data.createdBy == request.auth.uid) ||
+        (resource.data.cpf != null);
+
+      allow list: if 
+        isAdmin() ||
+        (isSignedIn() && isColaborador() && resource.data.createdBy == request.auth.uid) ||
+        (resource.data.cpf != null);
+
+      allow update: if 
+        isAdmin() ||
+        (isSignedIn() && resource.data.createdBy == request.auth.uid && 
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status", "observations"])) ||
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(["observations"]));
+
+      allow delete: if isSignedIn() && isAdmin();
+    }
+  }
+}
