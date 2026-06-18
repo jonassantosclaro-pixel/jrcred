@@ -8,6 +8,7 @@ import BolsaSimulator from "./BolsaSimulator";
 import InssSimulator from "./InssSimulator";
 import FgtsSimulator from "./FgtsSimulator";
 import LuzSimulator from "./LuzSimulator";
+import CltSimulator from "./CltSimulator";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { 
   FileText, 
@@ -30,7 +31,8 @@ import {
   X, 
   ChevronRight, 
   DollarSign,
-  Scale
+  Scale,
+  BookOpen
 } from "lucide-react";
 
 interface ColaboradorPanelProps {
@@ -39,7 +41,7 @@ interface ColaboradorPanelProps {
 }
 
 export default function ColaboradorPanel({ userProfile, systemConfig }: ColaboradorPanelProps) {
-  const [activeSubTab, setActiveSubTab] = useState<"stats" | "credit_consult" | "simulate_bolsa" | "simulate_inss" | "simulate_fgts" | "simulate_luz" | "customers">("stats");
+  const [activeSubTab, setActiveSubTab] = useState<"stats" | "credit_consult" | "simulate_bolsa" | "simulate_inss" | "simulate_fgts" | "simulate_luz" | "simulate_clt" | "customers">("stats");
   const [mySimulations, setMySimulations] = useState<Simulation[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -523,6 +525,19 @@ export default function ColaboradorPanel({ userProfile, systemConfig }: Colabora
 
           <button
             onClick={() => {
+              setActiveSubTab("simulate_clt");
+              setSelectedClientCpf(null);
+            }}
+            className={`w-full text-left py-3 px-4 rounded-xl text-sm font-bold flex items-center gap-3 transition cursor-pointer ${
+              activeSubTab === "simulate_clt" ? "bg-amber-400 text-slate-950 font-extrabold shadow-md" : "text-slate-300 hover:bg-slate-800"
+            }`}
+          >
+            <Calculator className="w-4 h-4" />
+            Simulador CLT Privado
+          </button>
+
+          <button
+            onClick={() => {
               setActiveSubTab("customers");
               setSelectedClientCpf(null);
             }}
@@ -599,6 +614,22 @@ export default function ColaboradorPanel({ userProfile, systemConfig }: Colabora
                     <span className="text-[10px] text-slate-500 mt-3 font-semibold">
                       {bolsaSimsCount} Bolsa+ | {inssSimsCount} INSS Consignado
                     </span>
+                  </div>
+                </div>
+
+                {/* Banner Informativa sobre Atualizações 2026 */}
+                <div className="bg-slate-900 text-white p-6 rounded-2xl border border-amber-400/30 shadow flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                  <div className="space-y-2">
+                    <span className="font-sans font-black uppercase text-[10px] tracking-wider text-amber-400 flex items-center gap-1.5 animate-pulse">
+                      <TrendingUp className="w-3.5 h-3.5" />
+                      Painel Operacional Atualizado (Versão Oficial 2026)
+                    </span>
+                    <h4 className="text-base font-black text-slate-100">
+                      Simuladores Ajustados com Regras do Diário Oficial de 2026
+                    </h4>
+                    <p className="text-xs text-slate-350 leading-relaxed max-w-2xl font-medium">
+                      Todas as esteiras de crédito foram calibradas para os valores oficiais vigentes: <span className="text-amber-400 font-bold">Consignado INSS</span> com piso baseado no salário mínimo de <span className="text-amber-400 font-bold">R$ 1.621</span> e prazos até 108x; <span className="text-emerald-400 font-bold">Antecipação FGTS</span> em até 5 saques anuais; <span className="text-yellow-400 font-bold">Bolsa Família</span> para microcrédito social de R$ 300 a R$ 1.500 amortizado em até 18 meses; e <span className="text-cyan-400 font-bold">Fatura de Luz (Crefaz)</span> com limite estendido para até R$ 4.200.
+                    </p>
                   </div>
                 </div>
 
@@ -1055,6 +1086,13 @@ export default function ColaboradorPanel({ userProfile, systemConfig }: Colabora
             {activeSubTab === "simulate_luz" && (
               <div className="space-y-6 animate-fade-in max-w-4xl mx-auto text-slate-900">
                 <LuzSimulator systemConfig={systemConfig} userProfile={userProfile} onSimulationSaved={() => {}} />
+              </div>
+            )}
+
+            {/* SUB TAB CLT CONSIGNADO */}
+            {activeSubTab === "simulate_clt" && (
+              <div className="space-y-6 animate-fade-in max-w-4xl mx-auto text-slate-900">
+                <CltSimulator systemConfig={systemConfig} userProfile={userProfile} onSimulationSaved={() => {}} />
               </div>
             )}
 

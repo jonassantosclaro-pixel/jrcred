@@ -68,20 +68,25 @@ export function generateWhatsAppLink(
   type: string
 ): string {
   const cleanPhone = cleanNumber(whatsappNumber);
-  const typeText = type === "bolsa_familia" ? "Bolsa Família (Bolsa+)" : "INSS Consignado";
   
-  const text = `Olá JR Crédito e Soluções e Financeiras!
-Gostaria de formalizar minha simulação de Crédito:
+  let typeText = "Consignado INSS";
+  if (type === "bolsa_familia") typeText = "Crédito Social Bolsa Família (Boleto - Livre)";
+  else if (type === "fgts") typeText = "Antecipação Saque-Aniversário FGTS";
+  else if (type === "luz") typeText = "Empréstimo Conta de Luz Crefaz";
+  else if (type === "clt") typeText = "Consignado Privado CLT";
+  
+  const text = `Olá JR Crédito e Soluções Financeiras!
+Gostaria de formalizar minha simulação de seguro/crédito:
 
 *Tipo:* ${typeText}
 *Nome:* ${clientName}
 *CPF:* ${cpf}
-${nis ? `*NIS:* ${nis}\n` : ""}\n*Valor do Benefício:* ${formatCurrency(benefitAmount)}
+${nis ? `*NIS:* ${nis}\n` : ""}*Renda/Salário/Benefício:* ${formatCurrency(benefitAmount)}
 *Parcela Simulada:* ${formatCurrency(installment)}
 *Valor Estimado Liberado:* ${formatCurrency(amount)}
-*Prazo:* ${months} meses
+*Prazo:* ${months} ${type === "fgts" ? "saques anuais" : "meses"}
 
-Favor analisar minha pré-aprovação!`;
+Favor analisar minha pré-aprovação para fechamento oficial de 2026!`;
 
   return `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(text)}`;
 }

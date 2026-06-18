@@ -37,26 +37,31 @@ export default function LuzSimulator({ systemConfig, userProfile, onSimulationSa
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const luzInterestRate = systemConfig?.luzInterestRate || 4.99;
+  const luzInterestRate = 11.72; // Taxa média residencial real de 11.72% a.m. em junho de 2026 (CET ~12.67%)
 
   // Real-time calculation of credit limit
-  // A typical electricity bill loan allows an installment of up to 45% of the bill value, but cannot exceed a credit cap of R$ 3,200.00
+  // A typical electricity bill loan allows an installment of up to 45% of the bill value, but cannot exceed a credit cap of R$ 5,000.00
   useEffect(() => {
-    // Estimating installment: say, typical maximum installment is 40% of their electricity bill to fit the debit safety margin
+    // Estimating installment: say, typical maximum installment is 45% of their electricity bill to fit the debit safety margin
     const suggestedInstallment = Math.round(luzAverageBill * 0.45);
     setInstallmentAmount(suggestedInstallment);
 
-    // Limit based on interest rate and installments list, maxed at R$ 3200.00 as per image
+    // Limit based on interest rate and installments list, maxed at R$ 5,000.00 as per 2026 rules
     // PV = installment * [(1 - (1 + i)^-n) / i]
     const i = luzInterestRate / 100;
     const factor = (1 - Math.pow(1 + i, -installments)) / i;
     let rawPV = suggestedInstallment * factor;
 
-    if (rawPV > 3200) {
-      rawPV = 3200;
-      // Re-calculate precise installment based on exact R$ 3,200 credit
+    if (rawPV > 5000) {
+      rawPV = 5000;
+      // Re-calculate precise installment based on exact R$ 5,000 credit
       const revisedInstallment = rawPV * (i * Math.pow(1 + i, installments)) / (Math.pow(1 + i, installments) - 1);
       setInstallmentAmount(Math.round(revisedInstallment));
+    }
+
+    // Ensure it shows range R$ 400 - R$ 5000
+    if (rawPV < 400) {
+      rawPV = 400;
     }
 
     setEstimatedRelease(Math.round(rawPV));
@@ -184,7 +189,7 @@ Favor dar andamento no meu crédito na conta de energia!`;
         </div>
         <h3 className="text-2xl font-bold font-sans tracking-tight">Crédito na Conta de Luz</h3>
         <p className="text-slate-400 text-sm mt-2 max-w-xl">
-          Linha inovadora com débito automático direto na sua fatura de energia elétrica. Basta ter a conta em seu nome e libera até R$ 3.200,00!
+          Linha inovadora com débito automático direto na sua fatura de energia elétrica. Basta ter a conta em seu nome e libera até R$ 4.200,00!
         </p>
       </div>
 
@@ -303,20 +308,20 @@ Favor dar andamento no meu crédito na conta de energia!`;
 
                 {/* Parcelas Mensais na Fatura */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-300 mb-2">Selecione o Prazo de Parcelamento</label>
-                  <div className="grid grid-cols-3 gap-3">
-                    {[12, 18, 24].map((months) => (
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">Selecione o Prazo de Parcelamento (8x a 24x)</label>
+                  <div className="grid grid-cols-5 gap-2">
+                    {[8, 12, 16, 20, 24].map((months) => (
                       <button
                         key={months}
                         type="button"
                         onClick={() => setInstallments(months)}
-                        className={`py-3 rounded-xl border text-sm font-bold transition duration-200 cursor-pointer ${
+                        className={`py-3 rounded-xl border text-xs font-bold transition duration-200 cursor-pointer ${
                           installments === months
-                            ? "border-yellow-500 bg-yellow-500/10 text-yellow-500"
+                            ? "border-yellow-500 bg-yellow-500/10 text-yellow-500 font-extrabold"
                             : "border-white/10 bg-[#020617] hover:bg-white/5 text-slate-400"
                         }`}
                       >
-                        {months} Meses
+                        {months}x
                       </button>
                     ))}
                   </div>

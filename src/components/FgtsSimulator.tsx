@@ -19,7 +19,7 @@ export default function FgtsSimulator({ systemConfig, userProfile, onSimulationS
   const [cpf, setCpf] = useState("");
   const [phone, setPhone] = useState("");
   const [fgtsBalance, setFgtsBalance] = useState(5000); // Standard FGTS balance
-  const [anticipatedYears, setAnticipatedYears] = useState(7); // Custom years (can choose up to 10, default 7)
+  const [anticipatedYears, setAnticipatedYears] = useState(5); // Limite oficial 2026 de até 5 parcelas
   const [receiveByPix, setReceiveByPix] = useState(true);
   const [observations, setObservations] = useState("");
 
@@ -71,15 +71,25 @@ export default function FgtsSimulator({ systemConfig, userProfile, onSimulationS
       const months = yr * 12;
       const yearPV = yearlyBase / Math.pow(1 + rate, months);
 
-      totalPV += yearPV;
+      // Capping each year/installment realistic range between R$ 100 and R$ 500
+      let cappedYearPV = yearPV;
+      if (cappedYearPV < 100) cappedYearPV = 100;
+      if (cappedYearPV > 500) cappedYearPV = 500;
+
+      totalPV += cappedYearPV;
       
       // Decrease remaining balance cap realistically for subsequent years
       balanceCap = balanceCap - yearlyBase;
       if (balanceCap < 0) balanceCap = 0;
     }
 
-    // Multiply by standard safety margin for pre-approval simulation (usually 92-95% of PV)
-    setEstimatedRelease(Math.round(totalPV * 0.95));
+    // Multiply by standard safety margin for pre-approval simulation
+    let calculated = Math.round(totalPV * 0.95);
+    // Capping at R$ 2,500 total as per June 2026 guidelines
+    if (calculated > 2500) {
+      calculated = 2500;
+    }
+    setEstimatedRelease(calculated);
   }, [fgtsBalance, anticipatedYears, fgtsInterestRate]);
 
   const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -201,7 +211,7 @@ Favor dar andamento na contratação do meu FGTS!`;
         </div>
         <h3 className="text-2xl font-bold font-sans tracking-tight">Antecipação Saque-Aniversário FGTS</h3>
         <p className="text-slate-400 text-sm mt-2 max-w-xl">
-          Antecipe até 10 parcelas anuais do seu saldo de FGTS. Sem parcelas mensais, descontadas diretamente do seu saldo!
+          Até 31/10/2026 antecipe até <span className="text-emerald-400 font-bold">5 parcelas anuais</span> (Mín R$ 100 e Máx R$ 500 por parcela, com limite global de <span className="text-emerald-400 font-bold">R$ 2.500,00</span>). Sem boletos mensais!
         </p>
       </div>
 
@@ -302,9 +312,9 @@ Favor dar andamento na contratação do meu FGTS!`;
 
                 {/* Parcelas Anuais para Antecipação */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-300 mb-2">Anos/Parcelas a Antecipar (Até 10)</label>
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">Anos/Parcelas a Antecipar (Até 5 Saques - Regulamento 2026)</label>
                   <div className="grid grid-cols-5 gap-2">
-                    {[1, 3, 5, 7, 10].map((years) => (
+                    {[1, 2, 3, 4, 5].map((years) => (
                       <button
                         key={years}
                         type="button"
@@ -312,15 +322,15 @@ Favor dar andamento na contratação do meu FGTS!`;
                         className={`py-3 rounded-xl border text-xs font-bold transition duration-200 cursor-pointer ${
                           anticipatedYears === years
                             ? "border-emerald-500 bg-emerald-500/10 text-emerald-450 font-black"
-                            : "border-white/10 bg-[#020617] hover:bg-white/5 text-slate-405"
+                            : "border-white/10 bg-[#020617] hover:bg-white/5 text-slate-500"
                         }`}
                       >
-                        {years} Anos
+                        {years} {years === 1 ? "Ano" : "Anos"}
                       </button>
                     ))}
                   </div>
                   <span className="block text-[10px] text-slate-500 mt-2 font-medium">
-                    *Permite antecipar de 1 até 10 parcelas do seu saldo de Saque-Aniversário.
+                    *Permite antecipar de 1 até 5 parcelas de Saque-Aniversário conforme novas diretrizes de preservação patrimonial.
                   </span>
                 </div>
               </div>

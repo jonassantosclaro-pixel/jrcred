@@ -5,26 +5,26 @@ import { Simulation, SystemConfig } from "../types";
 import { addDoc, collection } from "firebase/firestore";
 import { db } from "../firebase";
 import { handleFirestoreError, OperationType } from "../utils/firebaseErrorHandler";
-import { FileText, Smartphone, TrendingUp, AlertCircle, ShieldAlert, Sparkles, CheckCircle, Scale } from "lucide-react";
+import { FileText, Smartphone, TrendingUp, AlertCircle, ShieldAlert, Sparkles, CheckCircle, Briefcase } from "lucide-react";
 
-interface InssSimulatorProps {
+interface CltSimulatorProps {
   systemConfig: SystemConfig;
   userProfile?: any;
   onSimulationSaved?: (sim: Simulation) => void;
 }
 
-export default function InssSimulator({ systemConfig, userProfile, onSimulationSaved }: InssSimulatorProps) {
+export default function CltSimulator({ systemConfig, userProfile, onSimulationSaved }: CltSimulatorProps) {
   // Form fields
   const [name, setName] = useState("");
   const [cpf, setCpf] = useState("");
   const [phone, setPhone] = useState("");
-  const [benefitAmount, setBenefitAmount] = useState(1621); // Piso oficial 2026: R$1.621
-  const [installments, setInstallments] = useState(84); // Termo oficial máximo padrão INSS é 108 parcelas, padrão comercial 84
-  const [marginOption, setMarginOption] = useState<"standard" | "full">("standard"); // Standard is 35% loan, Full includes cards (40%)
+  const [salaryAmount, setSalaryAmount] = useState(2500); // Salário médio inicial real
+  const [installments, setInstallments] = useState(48); // Padrão: 48 meses
+  const [marginOption, setMarginOption] = useState<"standard" | "full">("standard"); // Standard is 30% loan, Full includes cards (35%)
   const [observations, setObservations] = useState("");
 
   // Simulation results
-  const [marginRate, setMarginRate] = useState(35);
+  const [marginRate, setMarginRate] = useState(30);
   const [marginValue, setMarginValue] = useState(0);
   const [loanEstimated, setLoanEstimated] = useState(0);
   const [isCpfValid, setIsCpfValid] = useState<boolean | null>(null);
@@ -37,22 +37,22 @@ export default function InssSimulator({ systemConfig, userProfile, onSimulationS
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const inssMaxMargin = 40; // Margem oficial INSS do benefício reduzida para 40% (35% empréstimo + 5% cartões) em 2026
-  const inssInterestRate = 1.85; // Teto real regulamentado de juros INSS em junho/2026: 1.85% a.m.
+  // CLT interest rate (médias de 2.5% a 4.5%, padrão 3.45% a.m.)
+  const cltInterestRate = 3.45;
 
   // Real-time calculations
   useEffect(() => {
-    // Definir taxa da margem selecionada
-    const rate = marginOption === "full" ? inssMaxMargin : 35;
+    // Standard loan margin is 30%, Full combined is 35%
+    const rate = marginOption === "full" ? 35 : 30;
     setMarginRate(rate);
 
-    const margin = benefitAmount * (rate / 100);
+    const margin = salaryAmount * (rate / 100);
     setMarginValue(margin);
 
     // Calculo do montante liberado
-    const calculatedLoan = calculateLoanAmount(margin, inssInterestRate, installments);
+    const calculatedLoan = calculateLoanAmount(margin, cltInterestRate, installments);
     setLoanEstimated(calculatedLoan);
-  }, [benefitAmount, installments, marginOption, inssMaxMargin, inssInterestRate]);
+  }, [salaryAmount, installments, marginOption, cltInterestRate]);
 
   // CPF validations
   const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,8 +74,8 @@ export default function InssSimulator({ systemConfig, userProfile, onSimulationS
     e.preventDefault();
     setErrorMessage("");
 
-    if (!name.trim()) return setErrorMessage("Por favor, preencha o nome do beneficiário INSS.");
-    if (cleanNumber(cpf).length !== 11) return setErrorMessage("O CPF de conter exatamente 11 dígitos.");
+    if (!name.trim()) return setErrorMessage("Por favor, preencha o nome do trabalhador CLT.");
+    if (cleanNumber(cpf).length !== 11) return setErrorMessage("O CPF deve conter exatamente 11 dígitos.");
     if (isCpfValid === false) return setErrorMessage("CPF inválido.");
     if (cleanNumber(phone).length < 10) return setErrorMessage("Preencha um número de celular válido para contato.");
 
@@ -95,15 +95,15 @@ export default function InssSimulator({ systemConfig, userProfile, onSimulationS
             clientName: name,
             cpf: cleanNumber(cpf),
             phone: phone,
-            benefitAmount: benefitAmount,
+            benefitAmount: salaryAmount,
             marginRate: marginRate,
             marginAmount: marginValue,
             installmentAmount: marginValue,
             requestedAmount: loanEstimated,
-            interestRate: inssInterestRate,
+            interestRate: cltInterestRate,
             installmentsCount: installments,
             status: "pre_approved",
-            type: "inss",
+            type: "clt",
             createdAt: new Date().toISOString(),
             createdBy: userProfile ? userProfile.uid : "public",
             createdByName: userProfile ? userProfile.name : "Simulação Web Pública",
@@ -157,21 +157,21 @@ export default function InssSimulator({ systemConfig, userProfile, onSimulationS
       simulationResult.installmentAmount,
       simulationResult.requestedAmount,
       simulationResult.installmentsCount,
-      "inss"
+      "clt"
     );
   };
 
   return (
-    <div id="inss-simulator-parent" className="bg-[#0f172a] rounded-[32px] overflow-hidden shadow-2xl border border-white/10 transition-all duration-300">
-      {/* Header com selo OURO */}
+    <div id="clt-simulator-parent" className="bg-[#0f172a] rounded-[32px] overflow-hidden shadow-2xl border border-white/10 transition-all duration-300">
+      {/* Header */}
       <div className="bg-gradient-to-r from-[#020617] to-[#0f172a] p-8 text-white relative border-b border-white/10">
-        <div className="absolute top-4 right-4 bg-yellow-500/10 text-yellow-500 text-xs px-3 py-1.5 rounded-full border border-yellow-500/25 flex items-center gap-1.5 font-medium">
-          <Scale className="w-3.5 h-3.5" />
-          Pre-Aprovação Oficial INSS
+        <div className="absolute top-4 right-4 bg-indigo-500/15 text-indigo-400 text-xs px-3 py-1.5 rounded-full border border-indigo-500/25 flex items-center gap-1.5 font-medium animate-pulse">
+          <Briefcase className="w-3.5 h-3.5" />
+          Pre-Aprovação CLT Privado
         </div>
-        <h3 className="text-2xl font-bold font-sans tracking-tight">Crédito Consignado INSS</h3>
+        <h3 className="text-2xl font-bold font-sans tracking-tight">Consignado CLT Privado</h3>
         <p className="text-slate-400 text-sm mt-2 max-w-xl">
-          Simule hoje seu empréstimo oficial de aposentados e pensionistas com juros competitivos de {inssInterestRate}% a.m.
+          Simule as condições exclusivas de juros para funcionários da iniciativa privada sob formato de convênio folha de pagamento.
         </p>
       </div>
 
@@ -186,15 +186,15 @@ export default function InssSimulator({ systemConfig, userProfile, onSimulationS
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Nome do Beneficiário */}
+              {/* Nome do Trabalhador */}
               <div>
-                <label className="block text-xs uppercase tracking-wider font-bold text-slate-400 mb-2">Nome Completo do Aposentado / Pensionista</label>
+                <label className="block text-xs uppercase tracking-wider font-bold text-slate-400 mb-2">Nome Completo do Colaborador (CLT)</label>
                 <input
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Ex: Benedito da Silva Santos"
+                  placeholder="Ex: Carlos Eduardo de Oliveira"
                   className="w-full text-white bg-[#020617] border border-white/10 focus:border-yellow-500 px-4 py-3 rounded-xl transition duration-200 outline-none"
                 />
               </div>
@@ -242,21 +242,21 @@ export default function InssSimulator({ systemConfig, userProfile, onSimulationS
               </div>
             </div>
 
-            {/* Opções de Margem INSS */}
+            {/* Opções de Margem CLT */}
             <div>
-              <label className="block text-xs uppercase tracking-wider font-bold text-slate-400 mb-3">Enquadramento de Margem Consignável</label>
+              <label className="block text-xs uppercase tracking-wider font-bold text-slate-400 mb-3">Linha de Margem Consignável CLT</label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <button
                   type="button"
                   onClick={() => setMarginOption("standard")}
                   className={`p-4 rounded-xl border text-left transition duration-200 focus:outline-none ${
                     marginOption === "standard"
-                      ? "border-yellow-500 bg-yellow-500/10 ring-1 ring-yellow-500"
+                      ? "border-indigo-500 bg-indigo-500/10 ring-1 ring-indigo-500"
                       : "border-white/10 bg-[#020617] hover:bg-white/5"
                   }`}
                 >
-                  <div className="font-bold text-slate-200 text-sm">Margem Padrão de Empréstimo (35%)</div>
-                  <div className="text-[11px] text-slate-400 mt-1">Limite regulamentar exclusivo para empréstimo em folha.</div>
+                  <div className="font-bold text-slate-200 text-sm">Margem Empréstimo Padrão (30%)</div>
+                  <div className="text-[11px] text-slate-400 mt-1">Limite focado em parcelamento tradicional em folha de pagamento.</div>
                 </button>
 
                 <button
@@ -264,56 +264,56 @@ export default function InssSimulator({ systemConfig, userProfile, onSimulationS
                   onClick={() => setMarginOption("full")}
                   className={`p-4 rounded-xl border text-left transition duration-200 focus:outline-none ${
                     marginOption === "full"
-                      ? "border-yellow-500 bg-yellow-500/10 ring-1 ring-yellow-500"
+                      ? "border-indigo-500 bg-indigo-500/10 ring-1 ring-indigo-500"
                       : "border-white/10 bg-[#020617] hover:bg-white/5"
                   }`}
                 >
-                  <div className="font-bold text-slate-200 text-sm">Margem Total Combinada ({inssMaxMargin}%)</div>
-                  <div className="text-[11px] text-slate-400 mt-1">Soma 35% de empréstimo + parcelas adicionais de cartão de benefícios e saques.</div>
+                  <div className="font-bold text-slate-200 text-sm">Margem Combinada com Cartão Consignado (35%)</div>
+                  <div className="text-[11px] text-slate-400 mt-1">Soma 30% em folha + 5% reservado para saques emergenciais ou cartão.</div>
                 </button>
               </div>
             </div>
 
-            <div className="bg-[#020617] p-6 rounded-2xl border border-white/5">
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Parâmetros do Benefício INSS</h4>
+            <div className="bg-[#020617] p-6 rounded-2xl border border-white/5 space-y-6">
+              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-white/10 pb-2">Parâmetros de Renda Líquida CLT</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Sliders de Valor de Benefício */}
+                {/* Sliders de Salário CLT */}
                 <div>
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="font-semibold text-slate-300">Valor do Benefício Mensal</span>
-                    <span className="font-bold text-yellow-500">{formatCurrency(benefitAmount)}</span>
+                    <span className="font-semibold text-slate-300">Salário / Renda Líquida</span>
+                    <span className="font-bold text-indigo-400">{formatCurrency(salaryAmount)}</span>
                   </div>
                   <input
                     type="range"
-                    min="1621"
-                    max="9000"
+                    min="1412"
+                    max="15000"
                     step="100"
-                    value={benefitAmount}
-                    onChange={(e) => setBenefitAmount(Number(e.target.value))}
-                    className="w-full accent-yellow-500 cursor-pointer"
+                    value={salaryAmount}
+                    onChange={(e) => setSalaryAmount(Number(e.target.value))}
+                    className="w-full accent-indigo-500 cursor-pointer"
                   />
                   <div className="flex justify-between text-xs text-slate-500 mt-1">
-                    <span>Mín: R$ 1.621</span>
-                    <span>Máx: R$ 9.000</span>
+                    <span>Mín: R$ 1.412</span>
+                    <span>Máx: R$ 15.000</span>
                   </div>
                 </div>
 
-                {/* Prazo */}
+                {/* Selecione o Prazo CLT */}
                 <div>
-                  <label className="block text-sm font-semibold text-slate-300 mb-2">Selecione o Prazo</label>
-                  <div className="grid grid-cols-5 gap-2">
-                    {[24, 48, 72, 84, 108].map((months) => (
+                  <label className="block text-sm font-semibold text-slate-300 mb-2">Selecione o Prazo (Até 96 meses)</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[24, 48, 72, 84, 96].map((months) => (
                       <button
                         key={months}
                         type="button"
                         onClick={() => setInstallments(months)}
-                        className={`py-3 rounded-xl border text-xs font-bold transition duration-200 ${
+                        className={`py-3 rounded-xl border text-xs font-bold transition duration-200 cursor-pointer ${
                           installments === months
-                            ? "border-yellow-500 bg-yellow-500/10 text-yellow-500 font-extrabold"
+                            ? "border-indigo-500 bg-indigo-500/10 text-indigo-400 font-extrabold"
                             : "border-white/10 bg-[#020617] hover:bg-white/5 text-slate-400"
                         }`}
                       >
-                        {months} Meses
+                        {months}m
                       </button>
                     ))}
                   </div>
@@ -321,74 +321,65 @@ export default function InssSimulator({ systemConfig, userProfile, onSimulationS
               </div>
             </div>
 
-            {/* Observações opcionais para Colaboradores */}
+            {/* Observações opcionais */}
             {userProfile && (
               <div>
-                <label className="block text-sm font-semibold text-slate-300 mb-2">Observações Adicionais de Enquadramento Oficial (Opcional)</label>
+                <label className="block text-sm font-semibold text-slate-300 mb-2">Dados de Convênio e CNPJ da Empresa (Opcional)</label>
                 <textarea
                   value={observations}
                   onChange={(e) => setObservations(e.target.value)}
-                  placeholder="Indique banco de preferência, banco do benefício, pendências de refinanciamento, etc."
-                  className="w-full text-white bg-[#020617] border border-white/10 focus:border-yellow-500 px-4 py-3 rounded-xl transition duration-200 outline-none h-18 text-sm"
+                  placeholder="Ex: Empresa Conveniada S/A, CNPJ 12.345.678/0001-90, Departamento de RH parceiro."
+                  className="w-full text-white bg-[#020617] border border-white/10 focus:border-indigo-500 px-4 py-3 rounded-xl transition duration-200 outline-none h-18 text-sm"
                 />
               </div>
             )}
 
-            {/* Banner de Conformidade Regulamentar June 2026 */}
-            <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl text-xs space-y-2 text-slate-300">
-              <span className="font-extrabold text-blue-400 block uppercase tracking-wider">🔒 Normativas Obrigatórias INSS 2026</span>
-              <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-400">
-                <li><strong className="text-white">Biometria Facial Obrigatória:</strong> Todas as novas propostas exigem validação de vivacidade no aplicativo oficial <span className="text-yellow-500">Meu INSS</span>.</li>
-                <li><strong className="text-white">Carência do Contrato:</strong> Possibilidade de carência de até 90 dias com início de pagamento programado.</li>
-              </ul>
-            </div>
-
-            {/* Live Indicator of calculations */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-6 bg-yellow-500/5 rounded-2xl border border-yellow-500/20 gap-4">
+            {/* Live Indicator */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-6 bg-indigo-500/5 rounded-2xl border border-indigo-500/20 gap-4">
               <div>
-                <div className="text-xs font-bold text-yellow-500 uppercase tracking-wide">Margem Consignável Estimada ({marginRate}%)</div>
-                <div className="text-2xl font-extrabold text-[#10B981] mt-1">{formatCurrency(marginValue)} /mês</div>
+                <div className="text-xs font-bold text-indigo-400 uppercase tracking-wide font-sans">Margem Consignada do Salário ({marginRate}%)</div>
+                <div className="text-2xl font-extrabold text-[#10B981] mt-1">{formatCurrency(marginValue)} <span className="text-xs text-white">/mês</span></div>
               </div>
               <div className="text-right md:text-left h-full flex flex-col justify-center">
                 <div className="text-xs font-bold text-slate-400 uppercase tracking-wide">Estimativa de Crédito Liberado</div>
-                <div className="text-3xl font-black text-yellow-500 animate-pulse mt-0.5">{formatCurrency(loanEstimated)}</div>
+                <div className="text-3xl font-black text-indigo-400 animate-pulse mt-0.5">{formatCurrency(loanEstimated)}</div>
               </div>
             </div>
 
-            {/* Botão de Simulação */}
+            {/* Submit */}
             <button
               type="submit"
               disabled={isSimulating}
-              className="w-full glow-button bg-gradient-to-r from-gold-dark to-gold text-white font-sans font-bold py-4 rounded-xl shadow-lg hover:shadow-xl hover:opacity-95 transition-all text-center flex items-center justify-center gap-2 text-lg cursor-pointer"
+              className="w-full glow-button bg-gradient-to-r from-indigo-700 to-indigo-500 text-white font-sans font-bold py-4 rounded-xl shadow-lg hover:shadow-xl hover:opacity-95 transition-all text-center flex items-center justify-center gap-2 text-lg cursor-pointer"
             >
               {isSimulating ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
-                  Módulo de Inteligência Analisando Proposta INSS ({progress}%) ...
+                  Módulo de Inteligência Analisando Proposta CLT ({progress}%) ...
                 </>
               ) : (
                 <>
                   <TrendingUp className="w-5 h-5" />
-                  Efetuar Pré-Aprovação Inteligente
+                  Efetuar Pré-Aprovação Inteligente CLT
                 </>
               )}
             </button>
           </form>
         ) : (
-          /* RESULTADOS DA SIMULAÇÃO E PRÉ-APROVAÇÃO */
-          <div className="space-y-6 animate-fade-in text-white">
+          /* RESULTADOS */
+          <div className="space-y-6 animate-fade-in text-white animate-fade-in">
             <div className="p-6 bg-green-500/10 border border-green-500/20 rounded-3xl text-center">
               <div className="inline-flex items-center justify-center bg-green-500/20 text-green-400 rounded-full p-3 mb-3">
                 <CheckCircle className="w-8 h-8" />
               </div>
-              <h4 className="text-2xl font-extrabold text-green-400">Crédito Pré-Aprovado Instântaneo!</h4>
+              <h4 className="text-2xl font-extrabold text-green-400">Crédito Pré-Aprovado CLT!</h4>
               <p className="text-xs text-green-500/80 font-medium mt-1 uppercase tracking-widest leading-relaxed">
-                Algoritmo Inteligente JR Crédito & Soluções Financeiras - Convênio INSS
+                Algoritmo de Análise JR - Seguro & Crédito Consignado Privado
               </p>
             </div>
 
             <div className="bg-[#020617] rounded-xl border border-white/5 p-6 space-y-4">
-              <h5 className="font-bold text-white border-b border-white/10 pb-2 mb-3">Resumo da Simulação Consignado</h5>
+              <h5 className="font-bold text-white border-b border-white/10 pb-2 mb-3">Resumo da Simulação CLT</h5>
               
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-[#0f172a] p-4 rounded-xl border border-white/5 text-center">
@@ -400,26 +391,26 @@ export default function InssSimulator({ systemConfig, userProfile, onSimulationS
                   <div className="text-xs font-extrabold text-slate-300 mt-1">{formatCPF(simulationResult.cpf)}</div>
                 </div>
                 <div className="bg-[#0f172a] p-4 rounded-xl border border-white/5 text-center">
-                  <div className="text-[10px] uppercase font-bold text-slate-500">Margem Consignável</div>
+                  <div className="text-[10px] uppercase font-bold text-slate-500">Margem Consignada</div>
                   <div className="text-xs font-extrabold text-[#10B981] mt-1">{formatCurrency(simulationResult.marginAmount)}</div>
                 </div>
                 <div className="bg-[#0f172a] p-4 rounded-xl border border-white/5 text-center">
-                  <div className="text-[10px] uppercase font-bold text-slate-500">Taxa de Juros</div>
+                  <div className="text-[10px] uppercase font-bold text-slate-500">Taxa de Juros (Média)</div>
                   <div className="text-xs font-extrabold text-slate-300 mt-1">{simulationResult.interestRate}% a.m.</div>
                 </div>
               </div>
 
-              {/* Quadro Destaque Principal de liberação */}
-              <div className="bg-gradient-to-br from-[#020617] to-[#0f172a] rounded-2xl text-white p-6 relative overflow-hidden border border-yellow-500/20">
-                <div className="absolute -right-4 -bottom-4 bg-yellow-500/5 rounded-full w-32 h-32 blur-xl" />
+              {/* Destaque de liberação */}
+              <div className="bg-gradient-to-br from-[#020617] to-[#0f172a] rounded-2xl text-white p-6 relative overflow-hidden border border-indigo-500/20">
+                <div className="absolute -right-4 -bottom-4 bg-indigo-500/5 rounded-full w-32 h-32 blur-xl" />
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div>
-                    <span className="text-xs uppercase font-extrabold text-yellow-500 tracking-widest">Valor Estimado Líquido para Liberação</span>
+                    <span className="text-xs uppercase font-extrabold text-indigo-400 tracking-widest">Valor Estimado Líquido para Liberação</span>
                     <h5 className="text-4xl font-extrabold text-white mt-1 font-mono">{formatCurrency(simulationResult.requestedAmount)}</h5>
                   </div>
                   <div className="md:text-right bg-white/5 border border-white/10 p-3 rounded-xl backdrop-blur-sm self-stretch flex flex-col justify-center">
-                    <span className="text-[10px] uppercase text-slate-300 font-bold">Parcela Mensal</span>
-                    <span className="text-lg font-black text-yellow-500">{formatCurrency(simulationResult.installmentAmount)} <span className="text-xs text-white">/mês</span></span>
+                    <span className="text-[10px] uppercase text-slate-300 font-bold">Dedução em Folha</span>
+                    <span className="text-lg font-black text-indigo-400">{formatCurrency(simulationResult.installmentAmount)} <span className="text-xs text-white">/mês</span></span>
                     <span className="text-[10px] text-slate-350 font-medium">{simulationResult.installmentsCount} meses</span>
                   </div>
                 </div>
@@ -440,53 +431,46 @@ export default function InssSimulator({ systemConfig, userProfile, onSimulationS
                 href={getWhatsAppLinkUrl()}
                 target="_blank"
                 rel="noreferrer"
-                className="w-full flex items-center justify-center gap-2 bg-green-650 hover:bg-green-700 text-white font-bold py-3.5 px-4 rounded-xl transition duration-200 text-center cursor-pointer shadow-lg shadow-green-500/10"
+                className="w-full flex items-center justify-center gap-2 bg-green-650 hover:bg-green-750 text-white font-bold py-3.5 px-4 rounded-xl transition duration-200 text-center cursor-pointer shadow-lg shadow-green-500/10"
               >
                 <Smartphone className="w-5 h-5" />
                 Formalizar no WhatsApp
               </a>
             </div>
 
-            {/* Persistence & Salvar no Firestore */}
+            {/* Registrar no Firestore */}
             <div className="bg-[#020617] p-6 rounded-2xl border border-white/5 space-y-4">
               <div>
-                <h6 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Deseja Registrar este lead de forma segura?</h6>
-                <p className="text-slate-550 text-xs mt-1">
-                  Guarde de forma persistente os dados deste cliente no Firestore para acompanhar o status e garantir sua comissão de vendas.
+                <h6 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Acompanhar este lead de forma segura?</h6>
+                <p className="text-slate-500 text-xs mt-1">
+                  Guarde os dados deste colaborador no Firestore para garantir o faturamento e comissionamento.
                 </p>
               </div>
 
               {saveSuccess ? (
                 <div className="bg-green-500/10 text-green-400 px-4 py-3 rounded-lg text-xs font-bold border border-green-500/20 flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-green-400" />
-                  Lead registrado e salvo no banco de dados em tempo real!
+                  Lead registrado e salvo no sistema em tempo real!
                 </div>
               ) : (
                 <button
                   onClick={saveSimulationToDb}
                   disabled={loadingSave}
-                  className="bg-yellow-600 hover:bg-yellow-500 text-[#020617] font-bold py-3 px-6 rounded-xl transition text-xs shadow-md shadow-yellow-500/5 inline-flex items-center gap-2 cursor-pointer"
+                  className="bg-[#312e81] hover:bg-indigo-900 text-white font-bold py-3 px-6 rounded-xl transition text-xs shadow-md inline-flex items-center gap-2 cursor-pointer"
                 >
-                  {loadingSave ? (
-                    <>
-                      <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-stone-800 border-t-transparent" />
-                      Registrando...
-                    </>
-                  ) : (
-                    "Registrar e Salvar Simulação na JR Crédito"
-                  )}
+                  {loadingSave ? "Registrando..." : "Registrar e Salvar Simulação CLT"}
                 </button>
               )}
             </div>
 
-            {/* Voltar para Simular outro */}
+            {/* Voltar */}
             <div className="text-center">
               <button
                 onClick={() => {
                   setSimulationResult(null);
                   setSaveSuccess(false);
                 }}
-                className="text-gold-dark hover:text-gold text-sm font-semibold underline decoration-dotted tracking-wide cursor-pointer"
+                className="text-indigo-400 hover:text-indigo-300 text-sm font-semibold underline decoration-dotted tracking-wide cursor-pointer"
               >
                 Realizar Novas Simulações
               </button>

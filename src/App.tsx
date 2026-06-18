@@ -55,15 +55,15 @@ import {
   CheckCheck
 } from "lucide-react";
 
-// Fallback System Config default standard
+// Fallback System Config default standard (Atualizado Junho/2026)
 const DEFAULT_CONFIG: SystemConfig = {
   id: "system_config",
   bolsaMaxMargin: 35,
-  bolsaInterestRate: 2.45,
-  inssMaxMargin: 45,
-  inssInterestRate: 1.70,
+  bolsaInterestRate: 5.90, // Crédito pessoal do Bolsa Família Livre via boleto
+  inssMaxMargin: 40, // Margem global regulamentar 40% (aposentados/pensionistas)
+  inssInterestRate: 1.85, // Teto real 1.85% em Junho/2026
   fgtsInterestRate: 1.99,
-  luzInterestRate: 4.99,
+  luzInterestRate: 11.72, // Taxa média 11.72% Crefaz
   whatsappNumber: "5511999999999"
 };
 

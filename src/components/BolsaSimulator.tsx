@@ -20,7 +20,7 @@ export default function BolsaSimulator({ systemConfig, userProfile, onSimulation
   const [nis, setNis] = useState("");
   const [phone, setPhone] = useState("");
   const [benefitAmount, setBenefitAmount] = useState(600); // Base Bolsa Família is R$600
-  const [installments, setInstallments] = useState(36); // standard terms (e.g. 24, 36, 48)
+  const [installments, setInstallments] = useState(12); // standard terms (e.g. 6, 12, 18)
   const [observations, setObservations] = useState("");
   
   // Custom requirements from images
@@ -43,7 +43,7 @@ export default function BolsaSimulator({ systemConfig, userProfile, onSimulation
   const [errorMessage, setErrorMessage] = useState("");
 
   const bolsaMaxMargin = systemConfig?.bolsaMaxMargin || 35;
-  const bolsaInterestRate = systemConfig?.bolsaInterestRate || 2.45;
+  const bolsaInterestRate = systemConfig?.bolsaInterestRate || 5.90;
 
   // Real-time calculations
   useEffect(() => {
@@ -95,8 +95,8 @@ export default function BolsaSimulator({ systemConfig, userProfile, onSimulation
     if (cleanNumber(phone).length < 10) return setErrorMessage("Preencha um número de WhatsApp válido.");
     
     // Novas validações das fotos (Bolsa Família)
-    if (benefitAmount < 400) {
-      return setErrorMessage("A renda/benefício deve ser de no mínimo R$ 400,00.");
+    if (benefitAmount < 300) {
+      return setErrorMessage("A renda/benefício deve ser de no mínimo R$ 300,00.");
     }
     if (!receivesByCaixaTem) {
       return setErrorMessage("Regra oficial: Para seguir, o benefício precisa ser recebido pelo aplicativo Caixa Tem.");
@@ -299,7 +299,7 @@ export default function BolsaSimulator({ systemConfig, userProfile, onSimulation
                   </div>
                   <input
                     type="range"
-                    min="400"
+                    min="300"
                     max="1500"
                     step="50"
                     value={benefitAmount}
@@ -307,11 +307,11 @@ export default function BolsaSimulator({ systemConfig, userProfile, onSimulation
                     className="w-full accent-yellow-500 cursor-pointer"
                   />
                   <div className="flex justify-between text-xs text-slate-500 mt-1">
-                    <span>Mín: R$ 400</span>
+                    <span>Mín: R$ 300</span>
                     <span>Máx: R$ 1.500</span>
                   </div>
                   <p className="text-[10px] text-slate-400 mt-2">
-                    *Renda assistencial mínima de R$ 400,00 para aprovação do consignado Bolsa+.
+                    *Renda assistencial mínima de R$ 300,00 para aprovação do microcrédito social assistido.
                   </p>
                 </div>
 
@@ -319,14 +319,14 @@ export default function BolsaSimulator({ systemConfig, userProfile, onSimulation
                 <div>
                   <label className="block text-sm font-semibold text-slate-300 mb-2">Selecione o Prazo</label>
                   <div className="grid grid-cols-3 gap-3">
-                    {[24, 36, 48].map((months) => (
+                    {[6, 12, 18].map((months) => (
                       <button
                         key={months}
                         type="button"
                         onClick={() => setInstallments(months)}
-                        className={`py-3 rounded-xl border text-sm font-bold transition duration-200 cursor-pointer ${
+                        className={`py-3 rounded-xl border text-sm font-bold transition duration-205 cursor-pointer ${
                           installments === months
-                            ? "border-yellow-500 bg-yellow-500/10 text-yellow-500"
+                            ? "border-yellow-500 bg-yellow-500/10 text-yellow-500 font-extrabold"
                             : "border-white/10 bg-[#020617] hover:bg-white/5 text-slate-400"
                         }`}
                       >
